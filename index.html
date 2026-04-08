@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Neon Pac-Man</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-content">
+        <h1>PAC-MAN</h1>
+        <div class="score-container">
+          <div class="score-item">
+            <span class="label">SCORE</span>
+            <span id="score" class="value neon-text-yellow">000000</span>
+          </div>
+          <div class="score-item">
+            <span class="label">HIGH</span>
+            <span id="high-score" class="value neon-text-blue">000000</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="game-wrapper">
+        <canvas id="game-canvas"></canvas>
+        <div id="overlay">
+          <div class="overlay-content">
+            <h2 id="overlay-title">READY?</h2>
+            <p id="overlay-message">CLICK TO START</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="joystick-base" class="joystick-base">
+      <div id="joystick-knob" class="joystick-knob"></div>
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="stats">
+          <div class="stat-item">
+            <span class="label">LEVEL</span>
+            <span id="level" class="value">1</span>
+          </div>
+          <div class="stat-item">
+            <span class="label">LIVES</span>
+            <div id="lives" class="lives-container">
+              <!-- Life icons will be injected here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="map.js"></script>
+  <script src="entities.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
