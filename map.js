@@ -8,6 +8,15 @@ const MAP_TILES = {
   VOID: 6
 };
 
+const LEVEL_WALL_COLORS = [
+  { stroke: '#0066ff', glow: 'rgba(0, 102, 255, 0.5)'  }, // Lv1  Blue
+  { stroke: '#ff3344', glow: 'rgba(255, 51, 68, 0.5)'  }, // Lv2  Red
+  { stroke: '#00cc66', glow: 'rgba(0, 204, 102, 0.5)'  }, // Lv3  Green
+  { stroke: '#cc44ff', glow: 'rgba(204, 68, 255, 0.5)' }, // Lv4  Purple
+  { stroke: '#ff8800', glow: 'rgba(255, 136, 0, 0.5)'  }, // Lv5  Orange
+  { stroke: '#00ffff', glow: 'rgba(0, 255, 255, 0.5)'  }, // Lv6+ Cyan
+];
+
 // 28 columns, 31 rows (Original Arcade Size)
 const MAZE_DATA = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -54,6 +63,7 @@ class Maze {
 
   reset(level = 1) {
     this.data = MAZE_DATA.map(row => [...row]);
+    this.wallColor = LEVEL_WALL_COLORS[Math.min(level - 1, LEVEL_WALL_COLORS.length - 1)];
     this.applyLevelWalls(level);
     this.totalDots = 0;
     for (let y = 0; y < this.height; y++) {
@@ -112,13 +122,13 @@ class Maze {
   }
 
   drawWall(ctx, x, y, px, py, s) {
-    ctx.strokeStyle = '#0066ff';
+    ctx.strokeStyle = this.wallColor.stroke;
     ctx.lineWidth = s * 0.15;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
     // Glow
-    ctx.shadowColor = 'rgba(0, 102, 255, 0.5)';
+    ctx.shadowColor = this.wallColor.glow;
     ctx.shadowBlur = s * 0.3;
 
     const margin = s * 0.2;

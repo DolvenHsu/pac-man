@@ -77,7 +77,22 @@ class GameEngine {
     
     this.lastTime = 0;
     this.touchStart = { x: 0, y: 0 };
-    
+
+    this.floatingTexts = [];
+    this.ghostCombo = 0;
+    this.dotsEaten = 0;
+    this.fruit = null;
+    this.fruitTypes = [
+      { name: 'CHERRY',     value: 100,  color: '#ff2244' },
+      { name: 'STRAWBERRY', value: 300,  color: '#ff66aa' },
+      { name: 'ORANGE',     value: 500,  color: '#ff8800' },
+      { name: 'APPLE',      value: 700,  color: '#ff0000' },
+      { name: 'MELON',      value: 1000, color: '#44cc44' },
+      { name: 'GALAXIAN',   value: 2000, color: '#4488ff' },
+      { name: 'BELL',       value: 3000, color: '#ffee44' },
+      { name: 'KEY',        value: 5000, color: '#88ffff' },
+    ];
+
     this.init();
     this.setupGamepad();
     this.applyDifficulty();
@@ -237,6 +252,10 @@ class GameEngine {
     });
     this.updateScore();
     this.updateLivesUI();
+    this.dotsEaten = 0;
+    this.ghostCombo = 0;
+    this.fruit = null;
+    this.floatingTexts = [];
   }
 
   updateScore(points = 0) {
@@ -277,11 +296,14 @@ class GameEngine {
       this.maze.setTile(gridX, gridY, MAP_TILES.EMPTY);
       this.updateScore(10);
       this.sound.playChomp();
+      this.dotsEaten++;
+      if (this.dotsEaten === 70 || this.dotsEaten === 170) this.spawnFruit();
       this.checkWin();
     } else if (tile === MAP_TILES.POWER_PELLET) {
       this.maze.setTile(gridX, gridY, MAP_TILES.EMPTY);
       this.updateScore(50);
       this.sound.playPowerUp();
+      this.ghostCombo = 0;
       this.ghosts.forEach(g => {
         g.mode = 'FRIGHTENED';
         g.frightenedTimer = this.frightenedDuration || 500;
@@ -294,16 +316,44 @@ class GameEngine {
     const blinky = this.ghosts[0];
     this.ghosts.forEach(g => {
       g.update(this.maze, this.pacman, blinky);
-      
+
       const dist = Math.sqrt(Math.pow(this.pacman.x - g.x, 2) + Math.pow(this.pacman.y - g.y, 2));
       if (dist < 0.6) {
         if (g.mode === 'FRIGHTENED') {
           g.mode = 'EATEN';
-          this.updateScore(200);
+          this.ghostCombo++;
+          const ghostScore = 200 * Math.pow(2, this.ghostCombo - 1);
+          this.updateScore(ghostScore);
+          this.addFloatingText(g.x, g.y, ghostScore.toString(), '#ffffff');
         } else if (g.mode !== 'EATEN') {
           this.handleDeath();
         }
       }
+    });
+
+    // Fruit Update
+    if (this.fruit) {
+      this.fruit.timer--;
+      if (this.fruit.timer <= 0) {
+        this.fruit = null;
+      } else {
+        const fdist = Math.sqrt(
+          Math.pow(this.pacman.x - this.fruit.x, 2) +
+          Math.pow(this.pacman.y - this.fruit.y, 2)
+        );
+        if (fdist < 0.8) {
+          this.updateScore(this.fruit.value);
+          this.addFloatingText(this.fruit.x, this.fruit.y, this.fruit.value.toString(), this.fruit.color);
+          this.fruit = null;
+        }
+      }
+    }
+
+    // Floating Texts Update
+    this.floatingTexts = this.floatingTexts.filter(ft => ft.life > 0);
+    this.floatingTexts.forEach(ft => {
+      ft.life--;
+      ft.alpha = ft.life / 60;
     });
   }
 
@@ -348,6 +398,9 @@ class GameEngine {
       
       setTimeout(() => {
         this.level++;
+        this.dotsEaten = 0;
+        this.ghostCombo = 0;
+        this.fruit = null;
         document.getElementById('level').textContent = this.level;
         this.maze.reset(this.level);
         this.pacman.x = 14;
@@ -369,6 +422,60 @@ class GameEngine {
     this.maze.draw(this.ctx, this.cellSize, time);
     this.pacman.draw(this.ctx, this.cellSize);
     this.ghosts.forEach(g => g.draw(this.ctx, this.cellSize));
+    this.drawFruit(this.ctx, this.cellSize);
+    this.drawFloatingTexts(this.ctx, this.cellSize);
+  }
+
+  spawnFruit() {
+    if (this.fruit) return;
+    const idx = Math.min(this.level - 1, this.fruitTypes.length - 1);
+    const type = this.fruitTypes[idx];
+    this.fruit = { x: 13, y: 17, value: type.value, color: type.color, timer: 600 };
+  }
+
+  addFloatingText(x, y, text, color) {
+    this.floatingTexts.push({ x, y, text, color, alpha: 1.0, life: 60 });
+  }
+
+  drawFruit(ctx, s) {
+    if (!this.fruit) return;
+    const f = this.fruit;
+    const px = (f.x + 0.5) * s;
+    const py = (f.y + 0.5) * s;
+    const r = s * 0.38;
+    const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 250);
+
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = s * 0.6 * pulse;
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bright inner highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(px - r * 0.25, py - r * 0.28, r * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  drawFloatingTexts(ctx, s) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.floor(s * 0.7)}px "Press Start 2P", monospace`;
+    this.floatingTexts.forEach(ft => {
+      const progress = 1 - ft.life / 60;
+      const px = (ft.x + 0.5) * s;
+      const py = (ft.y - progress * 2 + 0.5) * s;
+      ctx.globalAlpha = ft.alpha;
+      ctx.fillStyle = ft.color;
+      ctx.shadowColor = ft.color;
+      ctx.shadowBlur = 8;
+      ctx.fillText(ft.text, px, py);
+    });
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1.0;
   }
 }
 
