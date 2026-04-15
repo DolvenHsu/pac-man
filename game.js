@@ -110,10 +110,12 @@ class GameEngine {
   }
 
   resize() {
-    const container = document.querySelector('.game-wrapper');
-    const width = container.clientWidth;
-    this.cellSize = Math.floor(width / this.maze.width);
-    this.canvas.width = this.cellSize * this.maze.width;
+    // Base size on viewport width so the game scales with the screen.
+    // Cap at 370 px → cellSize 13, giving ~25 % larger objects than the
+    // old fixed 300 px default (cellSize 10).
+    const maxWidth = Math.min(window.innerWidth - 20, 370);
+    this.cellSize = Math.floor(maxWidth / this.maze.width);
+    this.canvas.width  = this.cellSize * this.maze.width;
     this.canvas.height = this.cellSize * this.maze.height;
   }
 
